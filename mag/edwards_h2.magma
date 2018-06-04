@@ -1,0 +1,103 @@
+/* 
+Implementng Factor Groups with Prime Order on Binary Elliptic Curves
+Hu, Oliveira, Zhang, Zhao
+
+# Factor group, Edwards form, h=2 
+*/
+clear;
+
+/* field */
+PR<Z> := PolynomialRing(GF(2));
+IZ := IrreduciblePolynomial(GF(2), 283);
+F<z> := ext<GF(2)|IZ>;
+
+/* curve */
+a2 := F!1;
+a6 := F!1;
+E := EllipticCurve([F|1, a2, 0, 0, a6]);
+
+/* edwards parameters */
+d1 := z;
+d2 := z^282 + z^281 + z^7 + z^6 + z^5 + z^3 + z^2;
+
+/* Ep isomorphic to E */
+a2p := d1^2 + d2;
+a6p := d1^4*(d1^4 + d1^2 + d2^2);
+Ep := EllipticCurve([F|1, a2p, 0, 0, a6p]);
+_, mE_Ep := IsIsomorphic(E, Ep);
+mEp_E := Inverse(mE_Ep);
+
+/* aux functions */
+load "aux.magma";
+
+/* encode */
+function enc(P) 
+    xP := P[1];
+    yP := P[2];
+
+    t := Trace(xP);
+    xP := xP + t;
+    yP := yP + t; 
+
+    A := xP^2+xP+d1;
+    B := xP^2+xP+d2;
+
+    if (A eq 0) then
+        b := 0;
+    else
+        b := Trace(yP*B*A^-1);
+    end if;
+
+    return [zip(xP),b];
+end function;
+
+/* decode */
+function dec(P)
+    x := P[1];
+    b := P[2];
+    x := unzip(x, 0);
+
+    A := x^2+x+d1;
+    B := x^2+x+d2;
+    C := d1*x+d2*x^2;
+
+    if (A eq 0) then
+        y := Sqrt(C*B^-1);
+        return true, [x, y];
+    else
+        t := (C*B*A^-2);
+        
+        if Trace(t) ne 0 then
+            return false, [0,0];
+        else
+            eta := ht(t, 283);
+        
+            if Trace(eta) ne b then
+                eta := eta + F!1;
+            end if;
+
+            y := eta*A*B^-1;    
+
+            return true, [x, y];
+        end if;
+    end if;
+end function;
+
+/* equality */
+function equ(P, Q)
+    xP := P[1];
+    yP := P[2];
+    xQ := Q[1];
+    yQ := Q[2];
+
+    xPQ := xP+xQ;
+    yPQ := yP+yQ;
+
+    xyPQ := [xPQ, yPQ];
+
+    if (xyPQ eq [0,0] or xyPQ eq [1,1]) then
+        return true;
+    end if;
+    return false;
+end function;
+

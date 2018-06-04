@@ -1,0 +1,99 @@
+/* 
+Implementng Factor Groups with Prime Order on Binary Elliptic Curves
+Hu, Oliveira, Zhang, Zhao
+
+# Factor group, Weierstrass form, h=2 
+*/
+clear;
+
+/* field */
+PR<Z> := PolynomialRing(GF(2));
+IZ := IrreduciblePolynomial(GF(2), 283);
+F<z> := ext<GF(2)|IZ>;
+
+/* curve */
+a2 := F!1;
+a6 := F!1;
+t6 := Sqrt(a6);
+E := EllipticCurve([F|1, a2, 0, 0, a6]);
+
+/* points */
+T2 := E![0, 1];
+OO := E!0;
+
+/* auxiliary functions */
+load "aux.magma";
+
+/* encode */
+function enc(P) 
+    uP := P[1];
+    vP := P[2];
+
+    if uP eq F!0 then        
+        return F!0;           
+    else                     
+        l := affLam(uP, vP);
+        tr := Trace(l);
+                             
+        if tr eq 0 then 
+            return uP;
+        else
+            return t6*uP^-1;
+        end if;
+    end if;
+end function;
+
+/* decode */
+function dec(zet)
+    if zet eq F!0 then                    
+        return true, E!0;
+    end if;                                 
+                                            
+    s := zet + a6*zet^-2;               
+    t := Trace(s);                          
+    
+    if t eq 0 then                          
+        return false, E!0;
+    end if;                                 
+                                            
+    rho := ht(a2+s, 283);                        
+    t := Trace(rho + zet);                
+    
+    if t eq 0 then                          
+        return true, E![zet,rho*zet];    
+    else                                    
+        return true, E![zet,(rho+1)*zet];
+    end if;                                 
+end function;
+
+/* equality */
+function equ(P, Q)
+    uP := P[1];
+    vP := P[2];
+    uQ := Q[1];
+    vQ := Q[2];
+
+    if (uP eq F!0) then
+        if (uQ eq F!0) then
+            return true;
+        end if;
+        return false;
+    end if;
+
+    if (uP eq uQ) then
+        if (vP eq vQ) then
+            return true;
+        end if;
+        return false;
+    end if;
+
+    if (uP*uQ eq t6) then
+        if (vQ*uP^2 eq t6*(uP+vP)+a6+t6*uP^2) then
+            return true;
+        end if;
+        return false;
+    end if;
+
+    return false;
+end function;
+

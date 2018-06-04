@@ -1,0 +1,106 @@
+/* 
+Implementng Factor Groups with Prime Order on Binary Elliptic Curves
+Hu, Oliveira, Zhang, Zhao
+
+# Factor group, Edwards form, h=4 
+*/
+clear;
+
+/* field */
+PR<Z> := PolynomialRing(GF(2));
+IZ := IrreduciblePolynomial(GF(2), 283);
+F<z> := ext<GF(2)|IZ>;
+
+/* curve */
+a2 := F!0;
+a6 := F!1;
+E := EllipticCurve([F|1, a2, 0, 0, a6]);
+
+/* edwards parameters */
+d1 := F!1;
+d2 := F!1;
+
+/* aux functions */
+load "aux.magma";
+
+/* encode */
+function enc(P) 
+    xP := P[1];
+    yP := P[2];
+
+    x1 := ht(Sqrt(d1+d2), 283);
+    y1 := x1 + F!1;
+    x3 := x1+F!1;
+    y3 := y1+F!1;
+
+    if (P eq [0,0] or P eq [1,1] or P eq [x1,y1] or P eq [x3,y3]) then
+        return 0;
+    end if;
+
+    t := Trace(mu([xP,yP], d1, d2));
+
+    if (t eq F!1) then
+        P := addEd(xP, yP, x1, y1); // only the x-coordinate is required
+        xP := P[1];
+        yP := P[2];
+    end if;
+
+    t := Trace(xP);
+    xP := xP + t;
+    yP := yP + t;
+
+    return zip(xP);
+end function;
+
+/* decode */
+function dec(zet)
+    x := unzip(zet, 0);
+
+    if (x eq 0) then
+        return true, [0, 0];
+    end if;
+
+    A := x^2+x+d1;
+    B := x^2+x+d2;
+    C := d1*x+d2*x^2;
+
+    s := (C*B*A^-2);
+    
+    if Trace(s) ne 0 then
+        return false, [0,0];
+    else
+        eta := ht(s, 283);
+        alp := A*B^-1;
+        y := eta*alp;
+    
+        t := Trace(mu([x,y], d1, d2));
+
+        if (t eq 1) then
+            y +:= alp;
+        end if;
+
+        return true, [x, y];
+    end if;
+end function;
+
+/* equality function */
+function equ(P, Q)
+    xP := P[1];
+    yP := P[2];
+    xQ := Q[1];
+    yQ := Q[2];
+
+    P := addEd(xP, yP, yQ, xQ);
+
+    x1 := ht(Sqrt(d1+d2), 283);
+    y1 := x1 + F!1;
+
+    x3 := x1+F!1;
+    y3 := y1+F!1;
+
+    if (P eq [0,0] or P eq [1,1] or P eq [x1,y1] or P eq [x3,y3]) then
+        return true;
+    end if;
+    return false;
+end function;
+
